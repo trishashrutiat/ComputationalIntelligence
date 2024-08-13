@@ -1,0 +1,15 @@
+Student,Study Hours,Attendance,Participation,Assignment Score,Grade
+S1,2,High,Active,70,B
+S2,3,Medium,Passive,80,B
+S3,1,Low,Passive,65,C
+S4,4,High,Active,85,A
+S5,5,High,Active,90,A
+S6,2,Low,Passive,60,C
+S7,3,Medium,Active,75,B
+S8,6,High,Active,95,A
+S9,2,Low,Passive,55,C
+S10,5,High,Active,85,A
+S11,3,Medium,Active,80,B
+S12,4,High,Active,90,A
+S13,1,Low,Passive,60,C
+S14,4,Medium,Active,85,A

@@ -1,0 +1,15 @@
+Day,Outlook,Temp,Humidity,Wind,Activity
+D1,Sunny,Hot,High,Weak,Play Tennis
+D2,Sunny,Hot,High,Strong,Stay Home
+D3,Overcast,Hot,High,Weak,Play Tennis
+D4,Rain,Mild,High,Weak,Go for a Walk
+D5,Rain,Cool,Normal,Weak,Go for a Walk
+D6,Rain,Cool,Normal,Strong,Stay Home
+D7,Overcast,Cool,Normal,Strong,Play Tennis
+D8,Sunny,Mild,High,Weak,Stay Home
+D9,Sunny,Cool,Normal,Weak,Play Tennis
+D10,Rain,Mild,Normal,Weak,Go for a Walk
+D11,Sunny,Mild,Normal,Strong,Play Tennis
+D12,Overcast,Mild,High,Strong,Play Tennis
+D13,Overcast,Hot,Normal,Weak,Play Tennis
+D14,Rain,Mild,High,Strong,Stay Home
