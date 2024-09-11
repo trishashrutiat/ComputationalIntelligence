@@ -1,0 +1,225 @@
+import os
+import random
+import time
+
+class WumpusWorld:
+    def __init__(self, size=4):
+        self.size = size
+        self.environment = [[' ' for _ in range(size)] for _ in range(size)]
+        self.player_pos = [size-1, 0]  # Start at the bottom-left corner
+        self.wumpus_pos = [random.randint(0, size-2), random.randint(1, size-1)]
+        self.pit_pos = [random.randint(0, size-2), random.randint(1, size-1)]
+        self.gold_pos = [random.randint(0, size-1), random.randint(1, size-1)]
+        self.wumpus_alive = True  # Track if Wumpus is alive
+        self.visited = set()
+        self.safe_zones = set()
+        self.unsafe_zones = set()
+        self.moves = 0
+        self.has_arrow = True  # Player starts with one arrow
+        self.agent_direction = 'right'  # The initial direction the agent is facing
+
+    def clear_screen(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    def print_environment(self):
+        self.clear_screen()
+        print("Wumpus World:")
+        print("-------------")
+        for i in range(self.size):
+            row = ""
+            for j in range(self.size):
+                cell_content = ""
+                if [i, j] == self.player_pos:
+                    cell_content += "A"  # Agent
+                else:
+                    percepts = self.get_percepts_at([i, j])
+                    if percepts["glitter"]:
+                        cell_content += "G"  # Glitter (Gold)
+                    elif [i, j] == self.wumpus_pos and self.wumpus_alive:
+                        cell_content += "W"  # Wumpus
+                    elif [i, j] == self.pit_pos:
+                        cell_content += "P"  # Pit
+                    else:
+                        if percepts["stench"] and self.wumpus_alive:
+                            cell_content += "S"  # Stench
+                        if percepts["breeze"]:
+                            cell_content += "B"  # Breeze
+                        if not cell_content:
+                            cell_content = "."
+
+                row += f" {cell_content} "
+            print(row)
+        print("-------------\n")
+
+    def get_percepts_at(self, position):
+        percepts = {"breeze": False, "stench": False, "glitter": False}
+        x, y = position
+
+        if position == self.gold_pos:
+            percepts["glitter"] = True
+
+        if self.wumpus_alive and any([x, y] == [self.wumpus_pos[0] + dx, self.wumpus_pos[1] + dy] for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            percepts["stench"] = True
+
+        if any([x, y] == [self.pit_pos[0] + dx, self.pit_pos[1] + dy] for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            percepts["breeze"] = True
+
+        return percepts
+
+    def get_percepts(self):
+        return self.get_percepts_at(self.player_pos)
+
+    def move_player(self, direction):
+        x, y = self.player_pos
+        self.agent_direction = direction  # Update the agent's facing direction
+
+        if direction == 'up' and x > 0:
+            self.player_pos = [x-1, y]
+        elif direction == 'down' and x < self.size-1:
+            self.player_pos = [x+1, y]
+        elif direction == 'left' and y > 0:
+            self.player_pos = [x, y-1]
+        elif direction == 'right' and y < self.size-1:
+            self.player_pos = [x, y+1]
+        else:
+            print("Invalid move or out of bounds.")
+            return False
+
+        self.moves += 1
+        return True
+
+    def update_knowledge_base(self):
+        self.visited.add(tuple(self.player_pos))
+        percepts = self.get_percepts()
+        
+        if not percepts["breeze"] and not percepts["stench"]:
+            self.safe_zones.update(self.get_adjacent_cells(self.player_pos))
+        
+        if percepts["breeze"]:
+            self.unsafe_zones.update(self.get_adjacent_cells(self.player_pos))
+        
+        if percepts["stench"]:
+            self.unsafe_zones.update(self.get_adjacent_cells(self.player_pos))
+
+    def get_adjacent_cells(self, position):
+        x, y = position
+        adjacent_cells = []
+        if x > 0:
+            adjacent_cells.append((x-1, y))
+        if x < self.size - 1:
+            adjacent_cells.append((x+1, y))
+        if y > 0:
+            adjacent_cells.append((x, y-1))
+        if y < self.size - 1:
+            adjacent_cells.append((x, y+1))
+        return adjacent_cells
+
+    def choose_next_move(self):
+        for cell in self.safe_zones:
+            if cell not in self.visited:
+                x, y = cell
+                px, py = self.player_pos
+                if x < px:
+                    return "up"
+                elif x > px:
+                    return "down"
+                elif y < py:
+                    return "left"
+                elif y > py:
+                    return "right"
+        return None
+
+    def shoot_arrow(self):
+        """Automatically shoot the arrow in the direction the agent is facing."""
+        if not self.has_arrow:
+            print("You have no arrows left!")
+            return False
+
+        self.has_arrow = False  # Arrow can only be shot once
+        px, py = self.player_pos
+
+        # Shoot based on agent's current facing direction
+        if self.agent_direction == 'up':
+            return self.shoot_in_direction("up")
+        elif self.agent_direction == 'down':
+            return self.shoot_in_direction("down")
+        elif self.agent_direction == 'left':
+            return self.shoot_in_direction("left")
+        elif self.agent_direction == 'right':
+            return self.shoot_in_direction("right")
+
+    def shoot_in_direction(self, direction):
+        """Handles shooting the arrow in a specified direction."""
+        px, py = self.player_pos
+        wx, wy = self.wumpus_pos
+
+        if direction == "up":
+            if py == wy and px > wx:
+                self.wumpus_alive = False
+                print("You shot the Wumpus! Scream!")
+                return True
+        elif direction == "down":
+            if py == wy and px < wx:
+                self.wumpus_alive = False
+                print("You shot the Wumpus! Scream!")
+                return True
+        elif direction == "left":
+            if px == wx and py > wy:
+                self.wumpus_alive = False
+                print("You shot the Wumpus! Scream!")
+                return True
+        elif direction == "right":
+            if px == wx and py < wy:
+                self.wumpus_alive = False
+                print("You shot the Wumpus! Scream!")
+                return True
+
+        print("Your arrow missed! The path is safe.")
+        # Mark the path as safe if the arrow misses
+        self.safe_zones.add((wx, wy))  # Assume the direction the arrow traveled is safe
+        return False
+
+    def check_status(self):
+        if self.player_pos == self.wumpus_pos and self.wumpus_alive:
+            print("Player encountered the Wumpus. Game Over!")
+            return False
+        elif self.player_pos == self.pit_pos:
+            print("Player fell into a pit. Game Over!")
+            return False
+        elif self.player_pos == self.gold_pos:
+            print("Player found the gold. You Win!")
+            return False
+        return True
+
+def play_game():
+    wumpus_world = WumpusWorld()
+    print("Welcome to the Wumpus World!")
+    num_moves = int(input("Enter the number of moves: "))
+
+    while wumpus_world.moves < num_moves:
+        wumpus_world.print_environment()
+        wumpus_world.update_knowledge_base()
+
+        move = wumpus_world.choose_next_move()
+        if move is None:
+            print("No safe moves available. Game Over!")
+            break
+
+        print(f"AI decided to move {move}.")
+        if not wumpus_world.move_player(move):
+            continue
+
+        if not wumpus_world.check_status():
+            break
+
+        # Automatically shoot Wumpus if stench is detected in current cell
+        if wumpus_world.get_percepts()["stench"] and wumpus_world.wumpus_alive:
+            wumpus_world.shoot_arrow()
+
+        time.sleep(1)  # Pause to simulate movement and give a clearer step-by-step display
+
+    if wumpus_world.moves == num_moves:
+        print("Out of moves! Game Over.")
+
+if __name__ == "__main__":
+    play_game()
